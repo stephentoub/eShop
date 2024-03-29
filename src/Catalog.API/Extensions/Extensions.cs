@@ -1,4 +1,8 @@
-﻿using eShop.Catalog.API.Services;
+﻿using Azure.AI.OpenAI;
+using eShop.Catalog.API.Services;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
+using Microsoft.SemanticKernel.Embeddings;
 
 public static class Extensions
 {
@@ -27,12 +31,18 @@ public static class Extensions
         builder.Services.AddOptions<CatalogOptions>()
             .BindConfiguration(nameof(CatalogOptions));
 
-        builder.Services.AddOptions<AIOptions>()
-            .BindConfiguration("AI");
-
-        if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("openai")))
+        if (builder.Configuration["AI:Onnx:EmbeddingModelPath"] is string modelPath &&
+            builder.Configuration["AI:Onnx:EmbeddingVocabPath"] is string vocabPath)
+        {
+            builder.Services.AddBertOnnxTextEmbeddingGeneration(modelPath, vocabPath);
+        }
+        else if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("openai")))
         {
             builder.AddAzureOpenAI("openai");
+            builder.Services.AddSingleton<ITextEmbeddingGenerationService>(sp =>
+                new OpenAITextEmbeddingGenerationService(
+                    builder.Configuration["AIOptions:OpenAI:EmbeddingName"] ?? "text-embedding-3-small",
+                    sp.GetRequiredService<OpenAIClient>()));
         }
 
         builder.Services.AddSingleton<ICatalogAI, CatalogAI>();
