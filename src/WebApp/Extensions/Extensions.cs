@@ -103,12 +103,8 @@ public static class Extensions
         var openAIOptions = builder.Configuration.GetSection("AI").Get<AIOptions>()?.OpenAI;
         var deploymentName = openAIOptions?.ChatModel;
 
-        if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("openai")) && !string.IsNullOrWhiteSpace(deploymentName))
-        {
-            builder.Services.AddKernel();
-            builder.AddAzureOpenAIClient("openai");
-            builder.Services.AddAzureOpenAIChatCompletion(deploymentName);
-        }
+        builder.Services.AddKernel();
+        builder.Services.AddSingleton<IChatCompletionService, JohnCustomChatCompletionService>();
     }
 
     public static async Task<string?> GetBuyerIdAsync(this AuthenticationStateProvider authenticationStateProvider)
